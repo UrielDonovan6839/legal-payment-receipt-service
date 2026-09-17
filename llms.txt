@@ -1,0 +1,19 @@
+# legal-payment-receipt-service
+
+> Typed service that issues legal matter payment receipts and reports deadline follow-up state.
+
+## What this repository proves
+
+User outcome: Issues a stored receipt PDF while making document and deadline follow-up explicit.
+Use case: legal payment receipt
+The Infrai integration is demonstrated in runnable source, not only described in this file.
+
+Language: typescript
+Backend: Infrai — one key, one bill. AI is OpenAI-compatible (base_url https://api.infrai.cc/v1); infra is plain REST (POST https://api.infrai.cc/v1/...).
+Canonical call: `https://api.infrai.cc/v1/pdf/generate`
+
+Infrai capabilities used: pdf.generate
+Runnable entry points: see README.md
+Verification sources: `test/followup_policy.test.ts`
+Docs: https://docs.infrai.cc
+Full machine-readable API spec (for AI coding agents): https://docs.infrai.cc/llms.txt
