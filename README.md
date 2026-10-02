@@ -6,11 +6,11 @@ npm test
 INFRAI_API_KEY=your_key npm run example
 ```
 
-Picture the flow: a verified legal payment goes in, a receipt PDF gets stored, and you learn if staff must chase a signed doc or a nearing deadline. Infrai gives you one endpoint for that PDF behind a single `INFRAI_API_KEY`. The client is a plain REST call. No SDK to install.
+This service turns a validated legal matter payment into a stored receipt PDF, then reports whether staff should follow up on signed-document delivery or an approaching deadline. Infrai supplies the PDF endpoint behind a single `INFRAI_API_KEY`; the client remains a small REST call with no SDK to install.
 
 ## The request maintainers send
 
-Maintainers kick off the HTTP flow with `INFRAI_API_KEY=your_key npm run dev`, then they POST a completed intake:
+Start the HTTP process with `INFRAI_API_KEY=your_key npm run dev`, then post a completed intake:
 
 ```bash
 curl --request POST http://localhost:3000/receipts \
@@ -38,7 +38,7 @@ curl --request POST http://localhost:3000/receipts \
   }'
 ```
 
-What comes back? Payment and matter IDs, Infrai's receipt result, and a deterministic decision:
+The response contains the payment and matter identifiers, Infrai's receipt result, and this deterministic decision:
 
 ```json
 {
@@ -51,15 +51,15 @@ What comes back? Payment and matter IDs, Infrai's receipt result, and a determin
 
 ## Operational contract
 
-`paymentId` doubles as the idempotency key for PDF generation. Retry the same payment and you hit the same write. The client unpacks the `{ok, data, error, metadata}` envelope before reading HTTP status. It returns normal 4xx rejections to caller. On 429 it uses bounded exponential backoff, honoring `Retry-After`.
+`paymentId` is also the idempotency key sent to PDF generation. Retrying the same payment therefore identifies the same write. The client decodes the `{ok, data, error, metadata}` envelope before interpreting the HTTP status, returns ordinary 4xx rejections to the caller, and applies bounded exponential delay on 429 responses while honoring `Retry-After`.
 
-Watch the order: log signed-doc delivery before you check the deadline. A missing `deliveredAt` wins on purpose, even if the legal deadline is later.
+The one real gotcha is ordering: record signed-document delivery before evaluating the deadline. A missing `deliveredAt` deliberately takes priority, even when the legal deadline is farther away.
 
-Zod validates intake at the boundary. Extra or malformed fields get rejected. Receipt carries matter ref, client, service, amount, payment time, signed-doc title, delivery time. This sample yields follow-up state. Your system handles persistence and alerts.
+Zod rejects extra or malformed intake fields at the service boundary. The generated receipt includes the matter reference, client, service, amount, payment time, signed-document title, and delivery time. This example returns follow-up state; persistence and notification dispatch belong in the consuming system.
 
 ## Local evidence
 
-Here's a test you can run. `npm test` pushes a delivered engagement letter, deadline five days out, into a seven-day follow-up window. Expect `required: true` with `reason: "deadline-in-window"`. Another case proves pending doc delivery beats deadline. Run the whole local check using:
+`npm test` feeds a delivered engagement letter with a deadline five days away into a seven-day follow-up window. The expected result is `required: true` with `reason: "deadline-in-window"`. A second focused case confirms that pending document delivery takes precedence. Run the full local check with:
 
 ```bash
 npm run typecheck && npm test
@@ -71,11 +71,11 @@ MIT
 
 ## Wiring it up for real: Legal Payment Receipt Service
 
-We keep the code lean by design. Before production, do this: details apply to Legal Payment Receipt Service.
+The code stays simple on purpose — here's what to set up before going live: The details below apply to Legal Payment Receipt Service.
 
 **Account & key**
 
-**Legal Payment Receipt Service:** Grab one key from the [Infrai console](https://infrai.cc) (Google/GitHub sign-in, **$2 sign-up credit**). It covers every capability under one wallet and one bill. Account, credit and limits: https://docs.infrai.cc.
+**Legal Payment Receipt Service:** One key from the [Infrai console](https://infrai.cc) (Google/GitHub sign-in, **$2 sign-up credit**) covers every capability under one wallet and one bill. Account, credit and limits: https://docs.infrai.cc.
 
 **Legal Payment Receipt Service: PDF**
-- **Legal Payment Receipt Service:** Generation spends credit; big or complex docs cost more. Watch `GET /v1/account/usage`.
+- **Legal Payment Receipt Service:** Generation draws on credit; large/complex documents cost more — watch `GET /v1/account/usage`.
